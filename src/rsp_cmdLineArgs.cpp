@@ -22,6 +22,7 @@
 #include "IPAddress.h"
 #include "rsp_cmdLineArgs.h"
 #include "common.h"
+#include "mir_sdr_device.h"
 #include <string>
 
 
@@ -90,11 +91,18 @@ void rsp_cmdLineArgs::displayUsage()
 	cout << "Usage: \t[-a listen address, default is 127.0.0.1]" << endl;
 	cout << "\t[-p listen port, default is 7890]" << endl;
 	cout << "\t[-f frequency [Hz], default is 178352000Hz]" << endl;
-	cout << "\t[-s sampling rate [Hz], allowed values are 512000, 1024000, 2048000, 4096000, 8192000, default is 2048000]" << endl;
+	cout << "\t[-s sampling rate [Hz], allowed values are ";
+	// ha: use single source - no duplicates of possible samplerates
+	for ( int k = 0; k < mir_sdr_device::c_numSamplingConfigs; ++k )
+	{
+		cout << mir_sdr_device::samplingConfigs[k].samplingRateHz << ", ";
+	}
+	cout << "default is " << mir_sdr_device::samplingConfigs[mir_sdr_device::initSamplingConfigIdx].samplingRateHz
+		<< "]" << endl;
 	cout << "\t[-g gain reduction, values betwee 0 and 100, default is 50]" << endl;
 	cout << "\t[-W bit width, value of 1 means 8 bit, value of 2 means 16 bit, default is 16 bit]" << endl;
 	cout << "\t[-d device index, value counts from 0 to number of devices -1, default is 0]" << endl;
-	cout << "\t[-T antenna, value of 1 means Antenna A, value of 2 means Antenna B, default is Antenn A]" << endl;
+	cout << "\t[-T antenna, value of 1 means Antenna A, value of 2 means Antenna B, default is Antenna A]" << endl;
 }
 
 

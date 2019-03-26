@@ -135,15 +135,15 @@ private:
 	// where ( 8-bit Byte) =  ( 16-bit short /64) + 127
 	eBitWidth bitWidth = BITS_16;
 
-	// Reasonable number of possible bandwidth/sampling rate combinations
-	const int c_numSamplingConfigs = 5;
-	samplingConfiguration samplingConfigs[5] = {
-		samplingConfiguration(512000, 2048000, mir_sdr_BW_0_300, 4, true),
-		samplingConfiguration(1024000, 2048000, mir_sdr_BW_0_600, 2, true),
-		samplingConfiguration(2048000, 2048000, mir_sdr_BW_1_536, 1, false),
-		samplingConfiguration(4096000, 4096000, mir_sdr_BW_5_000, 1, false),
-		samplingConfiguration(8192000, 8192000, mir_sdr_BW_8_000, 1, false)
-	};
+public:
+	// ha: made following members public and static,
+	//    (to make them available from command line)
+	//    and moved contents to .cpp
+	static const int c_numSamplingConfigs;  // = 6
+	static const samplingConfiguration samplingConfigs[6];
+	static int initSamplingConfigIdx; // = 3;
+
+private:
 
 	//QIRX internal type for the RSP2
 	BYTE rxType = 8;

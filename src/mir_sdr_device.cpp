@@ -23,6 +23,24 @@
 using namespace std;
 
 
+// ha: made following members public and static,
+//    (to make them available from command line)
+//    and moved contents from .h here
+const int mir_sdr_device::c_numSamplingConfigs = 6;
+
+const samplingConfiguration mir_sdr_device::samplingConfigs[6] = {
+    // ha: added 384 kHz samplerate with 200 kHz bandwidth
+    samplingConfiguration(384000, 3072000, mir_sdr_BW_0_200, 8, true),
+    samplingConfiguration(512000, 2048000, mir_sdr_BW_0_300, 4, true),
+    samplingConfiguration(1024000, 2048000, mir_sdr_BW_0_600, 2, true),
+    samplingConfiguration(2048000, 2048000, mir_sdr_BW_1_536, 1, false),
+    samplingConfiguration(4096000, 4096000, mir_sdr_BW_5_000, 1, false),
+    samplingConfiguration(8192000, 8192000, mir_sdr_BW_8_000, 1, false)
+};
+
+int mir_sdr_device::initSamplingConfigIdx = 3;
+
+
 mir_sdr_device::~mir_sdr_device()
 {
 	pthread_mutex_destroy(&mutex_rxThreadStarted);
@@ -45,6 +63,12 @@ void mir_sdr_device::init(rsp_cmdLineArgs* pargs)
 	currentSamplingRateHz = pargs->SamplingRate;
 	bitWidth = (eBitWidth)pargs->BitWidth;
 	antenna = pargs->Antenna;
+
+	// ha: determine the SamplingConfigIdx - to allow direct initialization in this mode
+	int defaultSamplingConfigIdx = initSamplingConfigIdx;
+	initSamplingConfigIdx = getSamplingConfigurationTableIndex(currentSamplingRateHz);
+	if ( initSamplingConfigIdx < 0 || initSamplingConfigIdx >= c_numSamplingConfigs )
+		initSamplingConfigIdx = defaultSamplingConfigIdx;
 }
 
 void mir_sdr_device::cleanup()
@@ -268,14 +292,15 @@ void* receive(void* p)
 		cout << "\nmir_sdr_ApiVersion returned with: " << err << endl;
 		cout << "API Version " << apiVersion << endl;
 
-		md->currentSamplingRateHz = md->samplingConfigs[2].samplingRateHz;
+		// ha: initialize directly to desired samplingConfig
+		md->currentSamplingRateHz = md->samplingConfigs[md->initSamplingConfigIdx].samplingRateHz;
 
 		int smplsPerPacket;
 
-		mir_sdr_ErrT errInit = mir_sdr_StreamInit(&md->gainReduction,
-			md->currentSamplingRateHz / 1e6,
+		mir_sdr_ErrT errInit = mir_sdr_StreamInit( &md->gainReduction,
+			md->samplingConfigs[md->initSamplingConfigIdx].deviceSamplingRateHz / 1e6,	// ha: initialize directly to desired samplingConfig
 			md->currentFrequencyHz / 1e6,
-			md->samplingConfigs[2].bandwidth,
+			md->samplingConfigs[md->initSamplingConfigIdx].bandwidth,	// ha: initialize directly to desired samplingConfig
 			mir_sdr_IF_Zero,
 			0,
 			&md->sys,
@@ -285,7 +310,9 @@ void* receive(void* p)
 			gainChangeCallback,
 			md);
 
-		cout << "\nmir_sdr_StreamInit returned with: " << errInit << endl;
+		// ha: detailed output - including samplerate and bandwidth
+		cout << "\nmir_sdr_StreamInit(bw " << md->samplingConfigs[md->initSamplingConfigIdx].bandwidth << " , srate " << md->currentSamplingRateHz << ") returned with: " << errInit << endl;
+
 		// disable DC offset and IQ imbalance correction (default is for these to be enabled  this
 		// just show how to disable if required)
 		//err = mir_sdr_DCoffsetIQimbalanceControl(1, 0);
@@ -317,6 +344,22 @@ void* receive(void* p)
 		cout << "\nmir_sdr_SetDcTrackTime returned with: " << err << endl;
 
 		md->setAGC(true);
+
+		// ha: initialize directly to desired samplingConfig - which might use decimation
+		if ( md->samplingConfigs[md->initSamplingConfigIdx].doDecimation )
+		{
+			int decimationFactor = md->samplingConfigs[md->initSamplingConfigIdx].decimationFactor;
+			err = mir_sdr_DecimateControl(1, decimationFactor, 0);
+			cout << "mir_sdr_DecimateControl returned with: " << err << endl;
+			if (err != mir_sdr_Success)
+			{
+				cout << "Requested Decimation Factor  was: " << decimationFactor << endl;
+			}
+			else
+			{
+				cout << "Decimation Factor set to  " << decimationFactor << endl;
+			}
+		}
 	}
 	catch (const std::exception& )
 	{
@@ -560,7 +603,9 @@ mir_sdr_ErrT mir_sdr_device::stream_InitForSamplingRate(int sampleConfigsTableIn
 		streamCallback,
 		gainChangeCallback,
 		this);
-	cout << "\nmir_sdr_StreamInit returned with: " << err << endl;
+
+	// ha: detailed output - including samplerate and bandwidth
+	cout << "\nmir_sdr_StreamInit(bw " << bandwidth << " , srate " << deviceSamplingRateHz << ") returned with: " << err << endl;
 	if (err != mir_sdr_Success)
 	{
 		cout << "Sampling Rate setting error: " << err << endl;
@@ -571,10 +616,13 @@ mir_sdr_ErrT mir_sdr_device::stream_InitForSamplingRate(int sampleConfigsTableIn
 		cout << "Sampling Rate set to (Hz): " << deviceSamplingRateHz << endl;
 		currentSamplingRateHz = deviceSamplingRateHz;
 
+		// ha: always configure decimation - also switch it off - in case previously activated
+		if ( !doDecimation )
+			decimationFactor = 1;
+		err = mir_sdr_DecimateControl(doDecimation, decimationFactor, 0);
+		cout << "mir_sdr_DecimateControl returned with: " << err << endl;
 		if (doDecimation == 1)
 		{
-			err = mir_sdr_DecimateControl(doDecimation, decimationFactor, 0);
-			cout << "mir_sdr_DecimateControl returned with: " << err << endl;
 			if (err != mir_sdr_Success)
 			{
 				cout << "Requested Decimation Factor  was: " << decimationFactor << endl;
@@ -628,9 +676,14 @@ int mir_sdr_device::getSamplingConfigurationTableIndex(int requestedSrHz)
 			return i;
 		}
 	}
-	printf("Invalid Sampling Rate: %d; Must be %d or %d or %d or %d or %d\n", requestedSrHz, samplingConfigs[0].samplingRateHz,
-		samplingConfigs[1].samplingRateHz, samplingConfigs[2].samplingRateHz, samplingConfigs[3].samplingRateHz, samplingConfigs[4].samplingRateHz);
-
+	printf("Invalid Sampling Rate: %d; Must be ", requestedSrHz);
+	// ha: use single source - no duplicates of possible samplerates
+	for (int i = 0; i < c_numSamplingConfigs; i++)
+	{
+		printf("%d%s",
+			samplingConfigs[i].samplingRateHz,
+			(i+1==c_numSamplingConfigs ? "\n" : " or ") );
+	}
 	return -1;
 }
 

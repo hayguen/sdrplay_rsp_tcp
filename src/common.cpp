@@ -18,7 +18,6 @@
 **
 **/
 
-#pragma once
 #include "common.h"
 
 #ifdef _WIN32
