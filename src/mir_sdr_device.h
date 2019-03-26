@@ -22,7 +22,7 @@
 #include "rsp_tcp.h"
 #include "common.h"
 #include "IPAddress.h"
-#include "mir_sdr.h"
+#include <mirsdrapi-rsp.h>
 #include "rsp_cmdLineArgs.h"
 #define HAVE_STRUCT_TIMESPEC
 #include <pthread.h>

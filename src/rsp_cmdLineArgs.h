@@ -21,7 +21,7 @@
 #pragma once
 #include <map>
 #include <string>
-#include "mir_sdr.h"
+#include <mirsdrapi-rsp.h>
 #include "IPAddress.h"
 using namespace std;
 

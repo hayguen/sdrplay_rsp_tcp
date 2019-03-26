@@ -27,7 +27,7 @@
 #include "common.h"
 #include "IPAddress.h"
 #include "mir_sdr_device.h"
-#include "mir_sdr.h"
+#include <mirsdrapi-rsp.h>
 #include "rsp_cmdLineArgs.h"
 
 class devices
