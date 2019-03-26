@@ -209,11 +209,7 @@ bool devices::getDevices()
 					throw msg_exception(error.c_str());
 
 				mir_sdr_device* pd = new mir_sdr_device();
-				if (mydevices[i].hwVer != 2)
-				{
-					printf("Hardware Version # %d not supported\n", mydevices[i].hwVer);
-					continue;
-				}
+				// ha: removed RSP2 filter: if (mydevices[i].hwVer != 2)
 				pd->devAvail = mydevices[i].devAvail == 1;
 				pd->hwVer = mydevices[i].hwVer;
 				pd->serno = mydevices[i].SerNo;

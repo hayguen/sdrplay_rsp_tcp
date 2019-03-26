@@ -302,6 +302,11 @@ void* receive(void* p)
 			md->isStreaming = false;
 		}
 
+		// ha: show RSP hardware model / version
+		unsigned char acHwVer[4] = { 0, 0, 0, 0 };
+		err = mir_sdr_GetHwVersion(&acHwVer[0]);
+		cout << endl << "mir_sdr_GetHwVersion returned " << int(acHwVer[0]) << " with " << err << endl;
+
 		md->setAntenna(md->antenna);
 
 		// configure DC tracking in tuner 
