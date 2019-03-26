@@ -103,6 +103,7 @@ void rsp_cmdLineArgs::displayUsage()
 	cout << "\t[-W bit width, value of 1 means 8 bit, value of 2 means 16 bit, default is 16 bit]" << endl;
 	cout << "\t[-d device index, value counts from 0 to number of devices -1, default is 0]" << endl;
 	cout << "\t[-T antenna, value of 1 means Antenna A, value of 2 means Antenna B, default is Antenna A]" << endl;
+	cout << "\t[-b bias-t, value of 1 activated, value of 0 means off, default is off]" << endl;
 }
 
 
@@ -151,6 +152,9 @@ int rsp_cmdLineArgs::parse()
 			break;
 		case 'T':
 			Antenna = static_cast<mir_sdr_RSPII_AntennaSelectT>(intValue(it->second, "Invalid Antenna Value ", 1, 2) + 4);
+			break;
+		case 'b':
+			enableBiasT = intValue(it->second, "Invalid Bias-T value  ", 0, 1);
 			break;
 		case 'd':
 			requestedDeviceIndex = intValue(it->second, "Invalid Device Index requested  ", 0, 8);

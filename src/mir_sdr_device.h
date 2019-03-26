@@ -166,7 +166,8 @@ private:
 	int gainReduction;
 	double currentSamplingRateHz;
 	int antenna = 5;
-	
+	int enableBiasT = 0;	// ha: added bias-T to allow powering external LNAs
+
 	//Callbacks per second, for a "timer" to discard samples 
 	//to prevent overrun in the device in the error case
 	int cbksPerSecond = 0;

@@ -63,6 +63,7 @@ void mir_sdr_device::init(rsp_cmdLineArgs* pargs)
 	currentSamplingRateHz = pargs->SamplingRate;
 	bitWidth = (eBitWidth)pargs->BitWidth;
 	antenna = pargs->Antenna;
+	enableBiasT = pargs->enableBiasT;
 
 	// ha: determine the SamplingConfigIdx - to allow direct initialization in this mode
 	int defaultSamplingConfigIdx = initSamplingConfigIdx;
@@ -335,6 +336,16 @@ void* receive(void* p)
 		cout << endl << "mir_sdr_GetHwVersion returned " << int(acHwVer[0]) << " with " << err << endl;
 
 		md->setAntenna(md->antenna);
+
+		// ha: configure Bias-T - ALL possible ones!
+		//   because it looks that no error is reported -- NEVER
+		//   but could be made specific to HwVersion
+		err = mir_sdr_rsp1a_BiasT(md->enableBiasT);
+		cout << endl << "mir_sdr_rsp1a_BiasT returned with: " << err << endl;
+		err = mir_sdr_RSPII_BiasTControl(md->enableBiasT);
+		cout << "mir_sdr_RSPII_BiasTControl returned with: " << err << endl;
+		err = mir_sdr_rspDuo_BiasT(md->enableBiasT);
+		cout << "mir_sdr_rspDuo_BiasT returned with: " << err << endl;
 
 		// configure DC tracking in tuner 
 		err = mir_sdr_SetDcMode(4, 1); // select one-shot tuner DC offset correction with speedup 
